@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignVerify — IISc</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- BRANDING HEADER -->
+<header class="site-header">
+  <div class="logo-wrap">
+    <!-- IISc logo: using official emblem via public URL -->
+    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/e/e8/Indian_Institute_of_Science_logo.svg/200px-Indian_Institute_of_Science_logo.svg.png"
+         alt="IISc Logo"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+    <div class="iisc-text" style="display:none">IISc</div>
+  </div>
+  <div class="brand-info">
+    <div class="brand-name">SignVerify</div>
+    <div class="brand-sub">Indian Institute of Science · SCALE Lab</div>
+  </div>
+  <span class="badge">⚠ Safety Research</span>
+</header>
+
+<div class="card">
+  <h2>Sign In</h2>
+  <p class="page-subtitle">Access the signage verification platform</p>
+
+  <div class="input-group">
+    <label>Email Address</label>
+    <input id="loginEmail" placeholder="you@example.com" type="email">
+  </div>
+
+  <div class="input-group">
+    <label>Password</label>
+    <input id="loginPassword" type="password" placeholder="••••••••">
+  </div>
+
+  <p id="loginError" class="error"></p>
+
+  <button onclick="login()">Sign In</button>
+
+  <p class="foot-note">Don't have an account? <a href="signup.html">Create one</a></p>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reviewer — SignVerify</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      align-items: flex-start;
+      padding: 24px 20px 48px;
+    }
+
+    .reviewer-layout {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .task-card {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .task-header {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .task-header .task-meta {
+      flex: 1;
+    }
+
+    .task-header .task-meta .task-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .task-header .expand-hint {
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+
+    .task-panel input {
+      margin-bottom: 0;
+    }
+
+    .task-panel button {
+      margin-top: 10px;
+    }
+
+    #score-display {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .instructions {
+      background: rgba(255,215,0,0.06);
+      border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .instructions strong {
+      color: var(--safety-yellow);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+<!-- BRANDING HEADER -->
+<header class="site-header" style="max-width:720px; margin: 0 auto 24px;">
+  <div class="logo-wrap">
+    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/e/e8/Indian_Institute_of_Science_logo.svg/200px-Indian_Institute_of_Science_logo.svg.png"
+         alt="IISc Logo"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+    <div class="iisc-text" style="display:none">IISc</div>
+  </div>
+  <div class="brand-info">
+    <div class="brand-name">SignVerify</div>
+    <div class="brand-sub">Indian Institute of Science · SCALE Lab</div>
+  </div>
+  <a href="index.html" class="logout-btn" style="position:static">Logout</a>
+</header>
+
+<div class="reviewer-layout">
+  <div class="card wide">
+    <h2>Reviewer Dashboard</h2>
+    <p style="font-size:12px; color:var(--text-muted); text-align:center; margin-bottom:20px;">Evaluate industrial safety signage clarity</p>
+
+    <div class="instructions">
+      <strong>How it works:</strong> Click a sign below to expand it. Write what you think the sign communicates — in your own words. Your response is compared to the designer's intended meaning using AI, and a clarity score is generated.
+    </div>
+
+    <div class="section-label">Pending Reviews</div>
+    <div id="tasks"><div class="empty-state"><div class="icon-big">🔍</div>Loading tasks…</div></div>
+  </div>
+</div>
+
+<!-- IMAGE MODAL -->
+<div id="imgModal" class="modal" onclick="closeModal()">
+  <img id="modalImg" alt="Signage enlarged view">
+</div>
+
+<script type="module">
+const TASK_API = "https://script.google.com/macros/s/AKfycbwi-_F4QqCeLBmnRklyxyvqYNt6BDXVskq6f37LSmFZKzwrCHqONrZlFujUw8LidoQ1/exec";
+
+import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
+
+const embed = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+
+let open = null;
+
+function cos(a, b) {
+  let d = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    d += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i];
+  }
+  return d / (Math.sqrt(na) * Math.sqrt(nb));
+}
+
+fetch(TASK_API, {
+  method: "POST",
+  body: JSON.stringify({ action: "getTasks" })
+})
+.then(r => r.json())
+.then(data => {
+  const cont = document.getElementById("tasks");
+  let hasVisible = false;
+
+  data.tasks.forEach((t, i) => {
+    if (t.reviews >= t.required) return;
+    hasVisible = true;
+
+    const div = document.createElement("div");
+    div.className = "task-card";
+
+    div.innerHTML = `
+      <div class="task-header" onclick="toggle(${i})">
+        <img src="${t.image}" onclick="openModal(event, '${t.image}')" title="Click to enlarge">
+        <div class="task-meta">
+          <div class="task-title">Sign #${i + 1}</div>
+          <div style="font-size:12px; color:var(--text-muted)">
+            ${t.reviews} of ${t.required} reviews collected
+          </div>
+          <div class="progress-wrap" style="margin-top:8px; max-width:180px">
+            <div class="progress-bar" style="width:${Math.min(100,(t.reviews/t.required)*100)}%"></div>
+          </div>
+          <div class="expand-hint">↓ Click to review</div>
+        </div>
+      </div>
+
+      <div id="panel${i}" class="task-panel">
+        <div class="input-group" style="margin-bottom:0">
+          <label>What does this sign communicate to you?</label>
+          <input id="ans${i}" placeholder="Describe the intended meaning in your own words…">
+        </div>
+        <button onclick="submitReview(event, ${i}, '${t.id}', ${JSON.stringify(t.text).replace(/'/g,"\\'")})" >
+          Submit Interpretation
+        </button>
+        <p id="score${i}" style="margin-top:10px; font-size:13px; color:var(--text-muted)"></p>
+      </div>
+    `;
+
+    cont.appendChild(div);
+  });
+
+  if (!hasVisible) {
+    cont.innerHTML = '<div class="empty-state"><div class="icon-big">🎉</div>All caught up! No pending reviews.</div>';
+  }
+
+  window.toggle = (i) => {
+    if (open !== null && open !== i) {
+      document.getElementById("panel" + open).style.display = "none";
+    }
+    const panel = document.getElementById("panel" + i);
+    const isOpen = panel.style.display === "block";
+    panel.style.display = isOpen ? "none" : "block";
+    open = isOpen ? null : i;
+  };
+
+  window.submitReview = async (e, i, id, orig) => {
+    e.stopPropagation();
+    const ans = document.getElementById("ans" + i).value.trim();
+    const scoreEl = document.getElementById("score" + i);
+
+    if (!ans) {
+      scoreEl.textContent = "Please enter your interpretation first.";
+      scoreEl.style.color = "var(--hazard-red)";
+      return;
+    }
+
+    scoreEl.textContent = "⏳ Calculating clarity score…";
+    scoreEl.style.color = "var(--text-muted)";
+
+    const e1 = await embed(orig, { pooling: 'mean', normalize: true });
+    const e2 = await embed(ans, { pooling: 'mean', normalize: true });
+
+    const sim = cos(e1.data, e2.data);
+    const sc = Math.max(0, sim) * 10;
+
+    let cls = sc >= 7 ? 'high' : sc >= 4 ? 'mid' : 'low';
+    let label = sc >= 7 ? 'High clarity' : sc >= 4 ? 'Moderate clarity' : 'Low clarity';
+
+    scoreEl.innerHTML = `<span class="score-badge ${cls}">${label} — ${sc.toFixed(1)} / 10</span>`;
+
+    await fetch(TASK_API, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "submitReview",
+        taskId: id,
+        text: ans,
+        score: sc
+      })
+    });
+
+    setTimeout(() => {
+      document.getElementById("panel" + i).style.display = "none";
+      open = null;
+    }, 2000);
+  };
+
+  window.openModal = (e, src) => {
+    e.stopPropagation();
+    document.getElementById("modalImg").src = src;
+    document.getElementById("imgModal").style.display = "flex";
+  };
+
+  window.closeModal = () => {
+    document.getElementById("imgModal").style.display = "none";
+  };
+});
+</script>
+
+</body>
+</html>

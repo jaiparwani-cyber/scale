@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Artist Dashboard — SignVerify</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      align-items: flex-start;
+      padding: 24px 20px 48px;
+    }
+
+    .dashboard-layout {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .dash-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .dash-header h2 {
+      text-align: left;
+      margin: 0;
+    }
+
+    .dash-header .new-task-btn {
+      width: auto;
+      padding: 10px 20px;
+      margin: 0;
+      font-size: 13px;
+    }
+
+    .stat-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .stat-box {
+      flex: 1;
+      background: var(--steel-mid);
+      border: 1px solid var(--steel-border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-box .stat-num {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--safety-yellow);
+      line-height: 1;
+    }
+
+    .stat-box .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- BRANDING HEADER -->
+<header class="site-header" style="max-width:720px; margin: 0 auto 24px;">
+  <div class="logo-wrap">
+    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/e/e8/Indian_Institute_of_Science_logo.svg/200px-Indian_Institute_of_Science_logo.svg.png"
+         alt="IISc Logo"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+    <div class="iisc-text" style="display:none">IISc</div>
+  </div>
+  <div class="brand-info">
+    <div class="brand-name">SignVerify</div>
+    <div class="brand-sub">Indian Institute of Science · SCALE Lab</div>
+  </div>
+  <a href="index.html" class="logout-btn" style="position:static">Logout</a>
+</header>
+
+<div class="dashboard-layout">
+  <div class="card wide">
+
+    <div class="dash-header">
+      <div>
+        <h2>Artist Dashboard</h2>
+        <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Manage your signage submissions</p>
+      </div>
+      <button class="new-task-btn" onclick="location.href='upload.html'">+ New Submission</button>
+    </div>
+
+    <!-- Stats Row (populated by JS) -->
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-num" id="stat-total">—</div>
+        <div class="stat-label">Total Tasks</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="stat-active">—</div>
+        <div class="stat-label">Under Review</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="stat-done">—</div>
+        <div class="stat-label">Completed</div>
+      </div>
+    </div>
+
+    <div class="section-label">Under Review</div>
+    <div id="active"><div class="empty-state"><div class="icon-big">📋</div>Loading tasks…</div></div>
+
+    <div class="section-label">Completed</div>
+    <div id="completed"><div class="empty-state"><div class="icon-big">✅</div>No completed tasks yet</div></div>
+
+  </div>
+</div>
+
+<script>
+const TASK_API = "https://script.google.com/macros/s/AKfycbx47hCGVA1wVDTk6ROWhOYTeA_sPPUCAwgWkgWkHdrbzqVllDFlHweGBktmSM3t-uLd/exec";
+
+function scoreClass(score) {
+  if (score >= 7) return 'high';
+  if (score >= 4) return 'mid';
+  return 'low';
+}
+
+fetch(TASK_API, {
+  method: "POST",
+  body: JSON.stringify({ action: "getTasks" })
+})
+.then(r => r.json())
+.then(d => {
+  let activeCount = 0, doneCount = 0;
+
+  document.getElementById("active").innerHTML = "";
+  document.getElementById("completed").innerHTML = "";
+
+  d.tasks.forEach(t => {
+    const pct = Math.min(100, (t.reviews / t.required) * 100);
+    const cls = scoreClass(t.avg);
+
+    const div = document.createElement("div");
+    div.className = "task-card";
+    div.innerHTML = `
+      <img src="${t.image}" alt="Signage">
+      <div class="task-info">
+        <div class="task-title">${t.text}</div>
+        <div style="margin: 6px 0;">
+          <span class="score-badge ${cls}">Score: ${t.avg.toFixed(1)}</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted)">${t.reviews} / ${t.required} reviews</div>
+        <div class="progress-wrap" style="margin-top:8px">
+          <div class="progress-bar" style="width:${pct}%"></div>
+        </div>
+      </div>
+    `;
+
+    if (t.reviews >= t.required) {
+      document.getElementById("completed").appendChild(div);
+      doneCount++;
+    } else {
+      document.getElementById("active").appendChild(div);
+      activeCount++;
+    }
+  });
+
+  const total = d.tasks.length;
+  document.getElementById("stat-total").textContent = total;
+  document.getElementById("stat-active").textContent = activeCount;
+  document.getElementById("stat-done").textContent = doneCount;
+
+  if (activeCount === 0)
+    document.getElementById("active").innerHTML = '<div class="empty-state"><div class="icon-big">📋</div>No active tasks. Submit a new design!</div>';
+  if (doneCount === 0)
+    document.getElementById("completed").innerHTML = '<div class="empty-state"><div class="icon-big">✅</div>No completed tasks yet</div>';
+});
+</script>
+
+</body>
+</html>

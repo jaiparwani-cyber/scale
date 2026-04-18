@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Submission — SignVerify</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .preview-wrap {
+      margin-top: 10px;
+      display: none;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--steel-border);
+      max-height: 200px;
+    }
+    .preview-wrap img {
+      width: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-bottom: 20px;
+      letter-spacing: 0.3px;
+    }
+    .back-link:hover { color: var(--safety-yellow); }
+  </style>
+</head>
+<body>
+
+<!-- BRANDING HEADER -->
+<header class="site-header">
+  <div class="logo-wrap">
+    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/e/e8/Indian_Institute_of_Science_logo.svg/200px-Indian_Institute_of_Science_logo.svg.png"
+         alt="IISc Logo"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+    <div class="iisc-text" style="display:none">IISc</div>
+  </div>
+  <div class="brand-info">
+    <div class="brand-name">SignVerify</div>
+    <div class="brand-sub">Indian Institute of Science · SCALE Lab</div>
+  </div>
+  <span class="badge">⚠ Safety Research</span>
+</header>
+
+<div class="card" style="max-width:440px">
+  <a href="artist.html" class="back-link">← Back to Dashboard</a>
+
+  <h2>New Submission</h2>
+  <p class="page-subtitle">Upload a signage design for clarity testing</p>
+
+  <div class="input-group">
+    <label>Signage Image</label>
+    <input type="file" id="img" accept="image/*" onchange="previewImage(this)">
+    <div class="preview-wrap" id="previewWrap">
+      <img id="previewImg" alt="Preview">
+    </div>
+  </div>
+
+  <div class="input-group">
+    <label>Intended Meaning</label>
+    <input id="text" placeholder="What should this sign communicate to workers?">
+  </div>
+
+  <div class="input-group">
+    <label>Required Number of Reviews</label>
+    <input id="num" type="number" min="1" placeholder="e.g. 5">
+  </div>
+
+  <button onclick="upload()">Submit for Review</button>
+  <p id="status" class="error" style="text-align:center; margin-top:10px"></p>
+</div>
+
+<script>
+const TASK_API = "https://script.google.com/macros/s/AKfycbx47hCGVA1wVDTk6ROWhOYTeA_sPPUCAwgWkgWkHdrbzqVllDFlHweGBktmSM3t-uLd/exec";
+
+function previewImage(input) {
+  const wrap = document.getElementById("previewWrap");
+  const img = document.getElementById("previewImg");
+  if (input.files && input.files[0]) {
+    img.src = URL.createObjectURL(input.files[0]);
+    wrap.style.display = "block";
+  }
+}
+
+function upload() {
+  const file = document.getElementById("img").files[0];
+  const text = document.getElementById("text").value.trim();
+  const num = document.getElementById("num").value.trim();
+  const status = document.getElementById("status");
+
+  if (!file) return (status.textContent = "Please select an image");
+  if (!text) return (status.textContent = "Please enter the intended meaning");
+  if (!num || isNaN(num) || Number(num) < 1) return (status.textContent = "Enter a valid review count");
+
+  status.textContent = "⏳ Uploading…";
+  status.style.color = "var(--text-muted)";
+
+  const imgEl = new Image();
+  imgEl.onload = function () {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const MAX = 400;
+    let w = imgEl.width, h = imgEl.height;
+
+    if (w > h) {
+      if (w > MAX) { h *= MAX / w; w = MAX; }
+    } else {
+      if (h > MAX) { w *= MAX / h; h = MAX; }
+    }
+
+    canvas.width = w;
+    canvas.height = h;
+    ctx.drawImage(imgEl, 0, 0, w, h);
+
+    const base64 = canvas.toDataURL("image/jpeg", 0.7);
+
+    fetch(TASK_API, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "createTask",
+        image: base64,
+        text,
+        required: num
+      })
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.status === "success") {
+        status.textContent = "✅ Submitted successfully!";
+        status.style.color = "var(--safe-green)";
+        setTimeout(() => location.href = "artist.html", 1200);
+      } else {
+        status.textContent = "❌ " + d.msg;
+        status.style.color = "var(--hazard-red)";
+      }
+    });
+  };
+
+  imgEl.src = URL.createObjectURL(file);
+}
+</script>
+
+</body>
+</html>

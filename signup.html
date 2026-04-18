@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account — SignVerify</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- BRANDING HEADER -->
+<header class="site-header">
+  <div class="logo-wrap">
+    <img src="https://upload.wikimedia.org/wikipedia/en/thumb/e/e8/Indian_Institute_of_Science_logo.svg/200px-Indian_Institute_of_Science_logo.svg.png"
+         alt="IISc Logo"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+    <div class="iisc-text" style="display:none">IISc</div>
+  </div>
+  <div class="brand-info">
+    <div class="brand-name">SignVerify</div>
+    <div class="brand-sub">Indian Institute of Science · SCALE Lab</div>
+  </div>
+  <span class="badge">⚠ Safety Research</span>
+</header>
+
+<div class="card">
+  <h2>Create Account</h2>
+  <p class="page-subtitle">Join the signage verification platform</p>
+
+  <div class="input-group">
+    <label>Full Name</label>
+    <input id="name" placeholder="Dr. Firstname Lastname">
+    <p class="error"></p>
+  </div>
+
+  <div class="input-group">
+    <label>Email Address</label>
+    <input id="email" placeholder="you@iisc.ac.in" type="email">
+    <p id="emailError" class="error"></p>
+  </div>
+
+  <div class="input-group">
+    <label>Phone Number</label>
+    <input id="number" placeholder="Digits only">
+    <p id="numberError" class="error"></p>
+  </div>
+
+  <div class="input-group">
+    <label>Password</label>
+    <input id="password" type="password" placeholder="At least 1 capital letter">
+    <p id="passwordError" class="error"></p>
+  </div>
+
+  <!-- ROLE SELECTION -->
+  <div class="input-group">
+    <label>Your Role</label>
+    <div class="role-container">
+      <label class="role-card">
+        <input type="radio" name="role" value="artist">
+        <div class="card-content">
+          <div class="icon">🎨</div>
+          <h3>Artist</h3>
+          <p>Upload signage designs for review</p>
+        </div>
+      </label>
+      <label class="role-card">
+        <input type="radio" name="role" value="reviewer">
+        <div class="card-content">
+          <div class="icon">🔍</div>
+          <h3>Reviewer</h3>
+          <p>Evaluate meaning &amp; clarity</p>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <p id="signupError" class="error"></p>
+
+  <button onclick="signup()">Create Account</button>
+
+  <p class="foot-note">Already have an account? <a href="index.html">Sign in</a></p>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
